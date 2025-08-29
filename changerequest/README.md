@@ -18,7 +18,7 @@ Authorization: Bearer <your-token>
 ## 1. ChangeRequest API
 
 ### Endpoints
-- `GET /api/changerequest/` - List all change requests
+- `GET /api/changerequest/` - List all change requests (paginated with comprehensive data)
 - `POST /api/changerequest/` - Create new change request
 - `GET /api/changerequest/{id}/` - Get specific change request
 - `PUT /api/changerequest/{id}/` - Update change request (full)
@@ -27,6 +27,249 @@ Authorization: Bearer <your-token>
 - `GET /api/changerequest/{id}/attachments/` - List attachments
 - `POST /api/changerequest/{id}/upload_attachment/` - Upload attachment
 - `POST /api/changerequest/{id}/remove_attachment/` - Remove attachment
+
+### GET /api/changerequest/ (Enhanced List View)
+**Features:**
+- **Pagination**: 20 items per page by default (configurable)
+- **Comprehensive Data**: Includes all related data (impact assessments, approvals, attachments, etc.)
+- **Statistics**: Provides breakdown by status, priority, and type
+- **Optimized Queries**: Uses select_related and prefetch_related for performance
+
+#### Pagination Parameters
+```
+page: 1                    # Page number (default: 1)
+page_size: 20             # Items per page (default: 20, max: 100)
+```
+
+#### Example Request
+```bash
+curl -X GET "http://localhost:8000/api/changerequest/?page=1&page_size=10&status=APPROVED" \
+  -H "Authorization: Bearer your-token"
+```
+
+#### Enhanced Response Format
+```json
+{
+  "count": 150,
+  "next": "http://localhost:8000/api/changerequest/?page=2&page_size=10",
+  "previous": null,
+  "results": [
+    {
+      "change_id": "12345678-1234-1234-1234-123456789abc",
+      "change_number": "CHG-12345678",
+      "change_title": "Database Performance Optimization",
+      "status": "APPROVED",
+      "requester_user_details": {
+        "id": 1,
+        "username": "admin",
+        "first_name": "Admin",
+        "last_name": "User",
+        "email": "admin@example.com"
+      },
+      "customer_details": {
+        "id": "01J6ABCDEFGHIJK123456789AB",
+        "customer_name": "Acme Corporation",
+        "customer_code": "ACME001",
+        "region": "North America",
+        "country": "USA"
+      },
+      "impact_assessment": {
+        "risk_level": "MEDIUM",
+        "impact_summary": "Database performance improvement",
+        "impacted_users_count": 150,
+        "downtime_required": true,
+        "downtime_duration": "30 minutes",
+        "ci_impacts": [
+          {
+            "ci_details": {
+              "ci_name": "PROD-DB-01",
+              "ci_type_details": {
+                "name": "Database Server"
+              }
+            }
+          }
+        ],
+        "attachments": [
+          {
+            "attachment_id": "attach-uuid",
+            "file_name": "risk_analysis.pdf",
+            "file_url": "/media/change_attachments/2025/08/risk_analysis.pdf"
+          }
+        ]
+      },
+      "approval_scheduling": {
+        "approval_route": "NORMAL",
+        "approval_status": "APPROVED",
+        "scheduled_start": "2025-08-30T09:00:00Z",
+        "scheduled_end": "2025-08-30T11:00:00Z"
+      },
+      "individual_approvals": [
+        {
+          "approval_type": "TECHNICAL",
+          "approver_details": {
+            "id": 3,
+            "username": "tech_lead",
+            "first_name": "Tech",
+            "last_name": "Lead"
+          },
+          "status": "APPROVED",
+          "comments": "Approved after review",
+          "approved_date": "2025-08-28T14:30:00Z"
+        }
+      ],
+      "implementation_monitoring": {
+        "assigned_team": "SAP_BASIS",
+        "runtime_status": "COMPLETED",
+        "actual_start": "2025-08-30T09:15:00Z",
+        "actual_end": "2025-08-30T10:45:00Z",
+        "issue_found": false
+      },
+      "closure_review": {
+        "success_status": "SUCCESSFUL",
+        "validation_result": "PASS",
+        "stakeholder_acceptance": "ACCEPTED",
+        "closure_date": "2025-08-30T15:00:00Z"
+      },
+      "attachments": [
+        {
+          "attachment_id": "main-attach-uuid",
+          "file_name": "change_plan.pdf",
+          "file_url": "/media/change_attachments/2025/08/change_plan.pdf",
+          "uploaded_by_details": {
+            "id": 1,
+            "username": "admin"
+          }
+        }
+      ],
+      "history": [
+        {
+          "table_name": "ChangeRequest",
+          "field_name": "status",
+          "old_value": "SUBMITTED",
+          "new_value": "APPROVED",
+          "timestamp": "2025-08-28T14:30:00Z",
+          "changed_by_details": {
+            "id": 3,
+            "username": "tech_lead"
+          }
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "total_count": 150,
+    "status_breakdown": {
+      "DRAFT": 12,
+      "SUBMITTED": 8,
+      "IN_REVIEW": 5,
+      "APPROVED": 25,
+      "REJECTED": 3,
+      "SCHEDULED": 10,
+      "IN_PROGRESS": 15,
+      "COMPLETED": 65,
+      "CANCELLED": 4,
+      "FAILED": 3
+    },
+    "priority_breakdown": {
+      "LOW": 45,
+      "MEDIUM": 60,
+      "HIGH": 35,
+      "CRITICAL": 10
+    },
+    "type_breakdown": {
+      "STANDARD": 80,
+      "NORMAL": 55,
+      "EMERGENCY": 10,
+      "AUTO_REMEDIATION": 5
+    },
+    "page_info": {
+      "current_page": 1,
+      "total_pages": 15,
+      "page_size": 10,
+      "has_next": true,
+      "has_previous": false
+    }
+  }
+}
+```
+
+#### Advanced Filtering and Search
+The GET /api/changerequest/ endpoint supports comprehensive filtering and search capabilities:
+
+##### Filter Parameters
+```bash
+# Filter by status
+GET /api/changerequest/?status=APPROVED
+
+# Filter by multiple criteria
+GET /api/changerequest/?status=APPROVED&priority=HIGH&change_type=NORMAL
+
+# Filter by customer
+GET /api/changerequest/?customer=01J6ABCDEFGHIJK123456789AB
+
+# Filter by date range
+GET /api/changerequest/?date_from=2025-08-01&date_to=2025-08-31
+
+# Filter by requester
+GET /api/changerequest/?requester=admin
+
+# Available filter fields:
+# - status: DRAFT, SUBMITTED, IN_REVIEW, APPROVED, REJECTED, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, FAILED
+# - change_type: STANDARD, NORMAL, EMERGENCY, AUTO_REMEDIATION
+# - category: HARDWARE, SOFTWARE, NETWORK, SAP_APPLICATION, OTHER_APPLICATIONS
+# - priority: LOW, MEDIUM, HIGH, CRITICAL
+# - initiated_by: USER, AI_AGENT, MONITORING_EVENT, AUTOMATION_RUNBOOK
+# - customer: Customer ID (ULID format)
+```
+
+##### Search Parameters
+```bash
+# Search across multiple fields
+GET /api/changerequest/?search=database
+
+# Search fields include:
+# - change_title
+# - business_justification
+# - change_number
+# - customer__customer_name
+```
+
+##### Ordering Parameters
+```bash
+# Order by single field
+GET /api/changerequest/?ordering=-request_date
+
+# Order by multiple fields
+GET /api/changerequest/?ordering=priority,status
+
+# Available ordering fields:
+# - request_date (use -request_date for descending)
+# - priority
+# - status
+# - change_title
+```
+
+##### Combined Example
+```bash
+# Complex query with pagination, filtering, searching, and ordering
+curl -X GET "http://localhost:8000/api/changerequest/?page=2&page_size=20&status=APPROVED&priority=HIGH&search=database&ordering=-request_date" \
+  -H "Authorization: Bearer your-token"
+```
+
+#### Performance Optimization
+The enhanced GET /api/changerequest/ endpoint is optimized for performance:
+
+- **Database Query Optimization**: Uses `select_related()` and `prefetch_related()` to minimize database queries
+- **Related Data Loading**: All associated data (impact assessments, approvals, attachments, etc.) is loaded efficiently
+- **Pagination**: Reduces payload size and improves response times
+- **Statistics Caching**: Statistics are calculated once per request, not per item
+
+**Query Efficiency:**
+- Single query for main change request data with joins
+- Batched queries for related collections (attachments, history, approvals)
+- No N+1 query problems when accessing related objects
+
+---
 
 ### POST /api/changerequest/
 **Content-Type:** `multipart/form-data`
@@ -39,8 +282,6 @@ change_title: "Database Performance Optimization"
 change_type: "NORMAL"  # Choices: STANDARD, NORMAL, EMERGENCY, AUTO_REMEDIATION
 category: "SOFTWARE"   # Choices: HARDWARE, SOFTWARE, NETWORK, SAP_APPLICATION, OTHER_APPLICATIONS
 priority: "HIGH"       # Choices: LOW, MEDIUM, HIGH, CRITICAL
-impact: "DEPARTMENT"   # Choices: INDIVIDUAL, TEAM, DEPARTMENT, ENTERPRISE
-urgency: "HIGH"        # Choices: LOW, MEDIUM, HIGH
 business_justification: "Database queries are running slow, affecting user productivity"
 initiated_by: "USER"   # Choices: USER, AI_AGENT, MONITORING_EVENT, AUTOMATION_RUNBOOK
 ```
@@ -48,6 +289,8 @@ initiated_by: "USER"   # Choices: USER, AI_AGENT, MONITORING_EVENT, AUTOMATION_R
 #### Optional Fields
 ```
 subcategory: "Database Optimization"
+impact: "DEPARTMENT"   # Choices: INDIVIDUAL, TEAM, DEPARTMENT, ENTERPRISE (optional)
+urgency: "HIGH"        # Choices: LOW, MEDIUM, HIGH (optional)
 source_event_id: "EVT-12345"
 correlation_id: "CORR-67890"
 customer: "01J6ABCDEFGHIJK123456789AB"  # Customer ID (ULID format) - auto-assigned from request.user.customer if not provided
@@ -65,7 +308,19 @@ remove_files: ["attachment-id-1", "attachment-id-2", "/media/path/to/file.pdf"] 
 
 #### Example cURL
 ```bash
-# Example 1: Customer auto-assigned from request.user.customer (recommended)
+# Example 1: Minimal required fields (customer auto-assigned from request.user.customer)
+curl -X POST "http://localhost:8000/api/changerequest/" \
+  -H "Authorization: Bearer your-token" \
+  -F "change_title=Database Performance Optimization" \
+  -F "change_type=NORMAL" \
+  -F "category=SOFTWARE" \
+  -F "priority=HIGH" \
+  -F "business_justification=Database queries are running slow" \
+  -F "initiated_by=USER" \
+  -F "uploaded_files=@/path/to/file1.pdf" \
+  -F "uploaded_files=@/path/to/file2.doc"
+
+# Example 2: With optional impact and urgency fields
 curl -X POST "http://localhost:8000/api/changerequest/" \
   -H "Authorization: Bearer your-token" \
   -F "change_title=Database Performance Optimization" \
@@ -79,15 +334,13 @@ curl -X POST "http://localhost:8000/api/changerequest/" \
   -F "uploaded_files=@/path/to/file1.pdf" \
   -F "uploaded_files=@/path/to/file2.doc"
 
-# Example 2: Explicitly specify customer (overrides auto-assignment)
+# Example 3: Explicitly specify customer (overrides auto-assignment)
 curl -X POST "http://localhost:8000/api/changerequest/" \
   -H "Authorization: Bearer your-token" \
   -F "change_title=Database Performance Optimization" \
   -F "change_type=NORMAL" \
   -F "category=SOFTWARE" \
   -F "priority=HIGH" \
-  -F "impact=DEPARTMENT" \
-  -F "urgency=HIGH" \
   -F "business_justification=Database queries are running slow" \
   -F "initiated_by=USER" \
   -F "customer=01J6ABCDEFGHIJK123456789AB" \
