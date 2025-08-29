@@ -13,6 +13,14 @@ All endpoints require authentication. Include the Authorization header:
 Authorization: Bearer <your-token>
 ```
 
+## File Storage
+All file attachments are stored in AWS S3 with private access. File URLs returned by the API include pre-signed URLs with temporary access tokens that expire after a configured time period. This ensures secure access to sensitive change management documents.
+
+**Important Notes:**
+- File URLs include authentication signatures and are temporary
+- URLs should not be cached or stored for long-term use
+- Access to files requires valid authentication through the API
+
 ---
 
 ## 1. ChangeRequest API
@@ -23,7 +31,12 @@ Authorization: Bearer <your-token>
 - `GET /api/changerequest/{id}/` - Get specific change request
 - `PUT /api/changerequest/{id}/` - Update change request (full)
 - `PATCH /api/changerequest/{id}/` - Update change request (partial)
-- `DELETE /api/changerequest/{id}/` - Delete change request
+- `DELE      "file_url": "https://your-s3-bucket.s3.amazonaws.com/private/changerequest/attachments/old_document.pdf?X-Amz-Signature=..."
+    },
+    {
+      "attachment_id": "87654321-8765-4321-8765-876543218765",
+      "file_name": "keep_this.xlsx",
+      "file_url": "https://your-s3-bucket.s3.amazonaws.com/private/changerequest/attachments/keep_this.xlsx?X-Amz-Signature=..."i/changerequest/{id}/` - Delete change request
 - `GET /api/changerequest/{id}/attachments/` - List attachments
 - `POST /api/changerequest/{id}/upload_attachment/` - Upload attachment
 - `POST /api/changerequest/{id}/remove_attachment/` - Remove attachment
@@ -93,7 +106,7 @@ curl -X GET "http://localhost:8000/api/changerequest/?page=1&page_size=10&status
           {
             "attachment_id": "attach-uuid",
             "file_name": "risk_analysis.pdf",
-            "file_url": "/media/change_attachments/2025/08/risk_analysis.pdf"
+            "file_url": "https://your-s3-bucket.s3.amazonaws.com/private/changerequest/attachments/risk_analysis.pdf?X-Amz-Signature=..."
           }
         ]
       },
@@ -134,7 +147,7 @@ curl -X GET "http://localhost:8000/api/changerequest/?page=1&page_size=10&status
         {
           "attachment_id": "main-attach-uuid",
           "file_name": "change_plan.pdf",
-          "file_url": "/media/change_attachments/2025/08/change_plan.pdf",
+          "file_url": "https://your-s3-bucket.s3.amazonaws.com/private/changerequest/attachments/change_plan.pdf?X-Amz-Signature=...",
           "uploaded_by_details": {
             "id": 1,
             "username": "admin"
@@ -712,7 +725,7 @@ is_active: true
     {
       "attachment_id": "attach-uuid-here",
       "file_name": "risk_analysis.pdf",
-      "file_url": "/media/change_attachments/2025/08/risk_analysis.pdf",
+      "file_url": "https://your-s3-bucket.s3.amazonaws.com/private/changerequest/attachments/risk_analysis.pdf?X-Amz-Signature=...",
       "uploaded_at": "2025-08-28T08:00:00Z",
       "uploaded_by_details": {
         "id": 1,
